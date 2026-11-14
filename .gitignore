@@ -1,0 +1,8 @@
+.vscode/
+.idea/
+*.iml
+bin/
+out/
+*.class
+sources.txt
+config/db.properties
