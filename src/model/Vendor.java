@@ -1,6 +1,5 @@
 package model;
 
-import exception.InvalidEntityException;
 import util.InputValidator;
 
 public class Vendor extends Entity implements Contactable {
