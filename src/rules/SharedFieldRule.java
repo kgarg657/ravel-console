@@ -3,6 +3,7 @@ package rules;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import model.Contactable;
 import model.Entity;
 import model.Relationship;
@@ -12,8 +13,12 @@ public abstract class SharedFieldRule implements RiskRule {
 
     protected abstract String extract(Contactable c);
     protected abstract String label();
+
     protected String normalize(String raw) {
-        return (raw == null) ? null : raw.trim();
+        if (raw == null) {
+            return null;
+        }
+        return raw.trim();
     }
 
     @Override
@@ -22,8 +27,8 @@ public abstract class SharedFieldRule implements RiskRule {
         if (all == null || all.isEmpty()) {
             return suggestions;
         }
-        
-        HashMap<String, List<Entity>> buckets = new HashMap<>();
+
+        Map<String, List<Entity>> buckets = new HashMap<>();
         for (Entity entity : all) {
             if (!(entity instanceof Contactable)) {
                 continue;
@@ -50,17 +55,15 @@ public abstract class SharedFieldRule implements RiskRule {
                     if (id1.equalsIgnoreCase(id2)) {
                         continue;
                     }
-                    String sourceId;                    
+
+                    String sourceId;
+                    String targetId;
                     if (id1.compareToIgnoreCase(id2) < 0) {
-                        sourceId = id1;                
+                        sourceId = id1;
+                        targetId = id2;
                     } else {
-                        sourceId = id2;                 
-                    }
-                    String targetId;                    
-                    if (id1.compareToIgnoreCase(id2) < 0) {
-                        targetId = id1;                
-                    } else {
-                        targetId = id2;                 
+                        sourceId = id2;
+                        targetId = id1;
                     }
 
                     suggestions.add(new Relationship(

@@ -10,12 +10,12 @@ public class SharedPhoneRule extends SharedFieldRule{
     }
 
     @Override 
-    public String extract(Contactable c){
+    protected  String extract(Contactable c){
         return c.getPhone();
     }
 
     @Override 
-    public String label(){
+    protected  String label(){
         return "SHARED_PHONE";
     }
     

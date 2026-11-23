@@ -1,119 +1,75 @@
 package main;
 
-import exception.InvalidEntityException;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
-import model.Employee;
 import model.Entity;
-import model.Invoice;
 import model.Relationship;
-import model.Vendor;
-import rules.RiskRule;
+import repository.InMemoryRepository;
+import repository.Repository;
+import rules.SharedBankRule;
 import rules.SharedGstRule;
+import rules.SharedPhoneRule;
+import service.DetectionService;
+import service.EntityService;
+import service.GraphService;
+import service.RelationshipService;
+import ui.EntityMenu;
+import ui.GraphMenu;
+import ui.RelationshipMenu;
 import util.ConsoleInput;
+import util.IdGenerator;
 
 public class RavelApp {
 
     public static void main(String[] args) {
         ConsoleInput input = new ConsoleInput();
-        List<Entity> entities = new ArrayList<>();
-        RiskRule gstRule = new SharedGstRule();
+        IdGenerator idGenerator = new IdGenerator();
+
+        Repository<Entity> entityRepo = new InMemoryRepository<>();
+        Repository<Relationship> linkRepo = new InMemoryRepository<>();
+
+        RelationshipService relationshipService = new RelationshipService(linkRepo, entityRepo, idGenerator);
+        EntityService entityService = new EntityService(entityRepo, relationshipService);
+
+        DetectionService detectionService = new DetectionService(relationshipService, idGenerator);
+        detectionService.addRule(new SharedGstRule());
+        detectionService.addRule(new SharedPhoneRule());
+        detectionService.addRule(new SharedBankRule());
+
+        GraphService graphService = new GraphService(relationshipService);
+
+        EntityMenu entityMenu = new EntityMenu(entityService, relationshipService, input);
+        RelationshipMenu relationshipMenu = new RelationshipMenu(relationshipService, input);
+        GraphMenu graphMenu = new GraphMenu(
+                detectionService,
+                graphService,
+                relationshipService,
+                entityService,
+                input);
 
         while (true) {
-            System.out.println("\n=== RAVEL FORENSIC AUDIT (M1) ===");
-            System.out.println("1. Register Entity");
-            System.out.println("2. List Entities");
-            System.out.println("3. Run Shared GST Rule");
+            System.out.println("\n=== RAVEL FORENSIC AUDIT CONSOLE (M2) ===");
+            System.out.println("1. Entity Menu (Registry, Reports, Load Demo Data)");
+            System.out.println("2. Detection & Graph Analysis Menu (Options 2-6)");
+            System.out.println("3. Relationship Menu");
             System.out.println("0. Exit");
 
-            int choice = input.readInt("Choose option: ", 0, 3);
+            int choice = input.readInt("Choose an option: ", 0, 3);
 
-            if (choice == 0) {
-                System.out.println("Exiting Ravel.");
-                break;
-            } else if (choice == 1) {
-                registerEntity(entities, input);
-            } else if (choice == 2) {
-                listEntities(entities);
-            } else if (choice == 3) {
-                runGstDetection(entities, gstRule);
+            switch (choice) {
+                case 1:
+                    entityMenu.show();
+                    break;
+                case 2:
+                    graphMenu.show();
+                    break;
+                case 3:
+                    relationshipMenu.show();
+                    break;
+                case 0:
+                    System.out.println("Exiting Ravel.");
+                    return;
+                default:
+                    break;
             }
-        }
-    }
-
-    private static void registerEntity(List<Entity> entities, ConsoleInput input) {
-        System.out.println("\nEntity Type: 1. Employee | 2. Vendor | 3. Invoice");
-        int type = input.readInt("Select type (1-3): ", 1, 3);
-
-        try {
-            if (type == 1) {
-                String id = input.readNonBlank("Employee ID (e.g. EMP-001): ");
-                String name = input.readNonBlank("Name: ");
-                String dept = input.readNonBlank("Department: ");
-                String role = input.readNonBlank("Role: ");
-                boolean hasGst = input.readYesNo("Does employee have a GST number?");
-                String gst = hasGst ? input.readNonBlank("GST (15 chars): ") : null;
-                String phone = input.readNonBlank("Phone (10 digits): ");
-                String bank = input.readNonBlank("Bank Account: ");
-
-                entities.add(new Employee(id, name, 0, dept, role, gst, phone, bank));
-                System.out.println("Registered Employee: " + id);
-
-            } else if (type == 2) {
-                String id = input.readNonBlank("Vendor ID (e.g. VEN-004): ");
-                String name = input.readNonBlank("Vendor Name: ");
-                String category = input.readNonBlank("Category: ");
-                String gst = input.readNonBlank("GST (15 chars): ");
-                String phone = input.readNonBlank("Phone (10 digits): ");
-                String bank = input.readNonBlank("Bank Account: ");
-
-                entities.add(new Vendor(id, name, 0, category, gst, phone, bank));
-                System.out.println("Registered Vendor: " + id);
-
-            } else {
-                String id = input.readNonBlank("Invoice ID (e.g. INV-101): ");
-                String name = input.readNonBlank("Description: ");
-                double amount = input.readDouble("Amount: ");
-                String approverId = input.readNonBlank("Approver Employee ID: ");
-                String vendorId = input.readNonBlank("Vendor ID: ");
-                String date = input.readNonBlank("Date (YYYY-MM-DD): ");
-
-                entities.add(new Invoice(id, name, 0, amount, approverId, vendorId, LocalDate.parse(date)));
-                System.out.println("Registered Invoice: " + id);
-            }
-        } catch (InvalidEntityException e) {
-            System.out.println("Validation Error: " + e.getMessage());
-        } catch (DateTimeParseException e) {
-            System.out.println("Validation Error: Invalid date format. Use YYYY-MM-DD.");
-        }
-    }
-
-    private static void listEntities(List<Entity> entities) {
-        System.out.println("\n--- Registered Entities ---");
-        if (entities.isEmpty()) {
-            System.out.println("No entities registered yet.");
-            return;
-        }
-        for (Entity e : entities) {
-            System.out.println(e);
-        }
-    }
-
-    private static void runGstDetection(List<Entity> entities, RiskRule gstRule) {
-        System.out.println("\n--- Running Rule: " + gstRule.getRuleName() + " ---");
-        List<Relationship> matches = gstRule.detect(entities);
-
-        if (matches.isEmpty()) {
-            System.out.println("No shared GST matches found.");
-            return;
-        }
-        for (Relationship link : matches) {
-            System.out.println(
-                link.getSourceId() + " <-> " + link.getTargetId()
-                + " [" + link.getLabel() + " | " + link.getStatus() + "]"
-            );
         }
     }
 }
