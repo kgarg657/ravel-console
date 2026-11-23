@@ -1,6 +1,8 @@
 package main;
 
 import exception.InvalidEntityException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import model.Employee;
@@ -56,7 +58,7 @@ public class RavelApp {
                 String phone = input.readNonBlank("Phone (10 digits): ");
                 String bank = input.readNonBlank("Bank Account: ");
 
-                entities.add(new Employee(id, name, dept, role, gst, phone, bank));
+                entities.add(new Employee(id, name, 0, dept, role, gst, phone, bank));
                 System.out.println("Registered Employee: " + id);
 
             } else if (type == 2) {
@@ -67,7 +69,7 @@ public class RavelApp {
                 String phone = input.readNonBlank("Phone (10 digits): ");
                 String bank = input.readNonBlank("Bank Account: ");
 
-                entities.add(new Vendor(id, name, category, gst, phone, bank));
+                entities.add(new Vendor(id, name, 0, category, gst, phone, bank));
                 System.out.println("Registered Vendor: " + id);
 
             } else {
@@ -78,11 +80,13 @@ public class RavelApp {
                 String vendorId = input.readNonBlank("Vendor ID: ");
                 String date = input.readNonBlank("Date (YYYY-MM-DD): ");
 
-                entities.add(new Invoice(id, name, amount, approverId, vendorId, date));
+                entities.add(new Invoice(id, name, 0, amount, approverId, vendorId, LocalDate.parse(date)));
                 System.out.println("Registered Invoice: " + id);
             }
         } catch (InvalidEntityException e) {
             System.out.println("Validation Error: " + e.getMessage());
+        } catch (DateTimeParseException e) {
+            System.out.println("Validation Error: Invalid date format. Use YYYY-MM-DD.");
         }
     }
 
