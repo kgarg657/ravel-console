@@ -136,7 +136,8 @@ public class EntityMenu {
         int riskScore = input.readInt("Risk Score (0-100): ", 0, 100);
         String department = input.readNonBlank("Department: ");
         String role = input.readNonBlank("Role: ");
-        String gst = input.readNonBlank("GST (or N/A): ");
+        String rawGst = input.readNonBlank("GST (or '-' if none): ");
+        String gst = parseOptionalGst(rawGst);
         String phone = input.readNonBlank("Phone: ");
         String bankAccount = input.readNonBlank("Bank Account: ");
 
@@ -144,6 +145,20 @@ public class EntityMenu {
                 id, name, riskScore, department, role, gst, phone, bankAccount);
         entityService.register(emp);
         System.out.println("Employee registered: " + emp.getId());
+    }
+
+    private String parseOptionalGst(String rawGst) {
+        if (rawGst == null) {
+            return null;
+        }
+        String trimmed = rawGst.trim();
+        if (trimmed.isEmpty()
+                || trimmed.equals("-")
+                || trimmed.equalsIgnoreCase("N/A")
+                || trimmed.equalsIgnoreCase("NONE")) {
+            return null;
+        }
+        return trimmed;
     }
 
     private void registerVendor() {
@@ -162,7 +177,7 @@ public class EntityMenu {
     }
 
     private void registerInvoice() {
-        String id = input.readNonBlank("Invoice ID (e.g. INV-001): ");
+        String id = input.readNonBlank("Invoice ID (e.g. INV-101): ");
         String name = input.readNonBlank("Invoice Title / Name: ");
         int riskScore = input.readInt("Risk Score (0-100): ", 0, 100);
         double amount = input.readDouble("Amount: ");
@@ -228,7 +243,7 @@ public class EntityMenu {
                 emp.setRole(input.readNonBlank("New Role: "));
             }
             if (input.readYesNo("Update GST? (y/n): ")) {
-                emp.setGst(input.readNonBlank("New GST: "));
+                emp.setGst(parseOptionalGst(input.readNonBlank("New GST (or '-' if none): ")));
             }
             if (input.readYesNo("Update phone? (y/n): ")) {
                 emp.setPhone(input.readNonBlank("New Phone: "));
@@ -312,10 +327,10 @@ public class EntityMenu {
     private void loadDemoData() {
         registerIfMissing(new Employee(
                 "EMP-001", "Aarav Sharma", 35,
-                "Finance", "Analyst", "07AABCU9603R1ZM", "9876543210", "ACC123456"));
+                "Finance", "Analyst", null, "9876543210", "ACC123456"));
         registerIfMissing(new Employee(
                 "EMP-002", "Meera Nair", 25,
-                "Audit", "Reviewer", "03AAACH7409R1Z2", "9876543214", "ACC123457"));
+                "Audit", "Reviewer", null, "9876543214", "ACC123457"));
 
         registerIfMissing(new Vendor(
                 "VEN-001", "Apex Supplies", 55,
@@ -326,17 +341,20 @@ public class EntityMenu {
         registerIfMissing(new Vendor(
                 "VEN-003", "Crest Tech", 65,
                 "IT Services", "29CCCCC2222C1Z9", "9876543215", "ACC890123"));
+        registerIfMissing(new Vendor(
+                "VEN-004", "Vertex Traders", 50,
+                "Supplies", "07DDDDD3333D1Z1", "9876543210", "ACC890124"));
 
         registerIfMissing(new Invoice(
-                "INV-001", "Office Supplies Order", 40,
+                "INV-101", "Office Supplies Order", 40,
                 12500.0, "EMP-001", "VEN-001", LocalDate.of(2026, 11, 1)));
         registerIfMissing(new Invoice(
-                "INV-002", "Fleet Transport Bill", 50,
+                "INV-102", "Fleet Transport Bill", 50,
                 18000.0, "EMP-002", "VEN-002", LocalDate.of(2026, 11, 5)));
 
         recordPaymentIfMissing("VEN-001", "VEN-002", 25000.0);
         recordPaymentIfMissing("VEN-002", "VEN-003", 15000.0);
-        recordPaymentIfMissing("VEN-001", "VEN-003", 30000.0);
+        recordPaymentIfMissing("VEN-003", "VEN-001", 30000.0);
 
         System.out.println("Demo data loaded.");
     }

@@ -46,7 +46,7 @@ public class RavelApp {
                 input);
 
         while (true) {
-            System.out.println("\n=== RAVEL FORENSIC AUDIT CONSOLE (M2) ===");
+            System.out.println("\n=== RAVEL FORENSIC AUDIT CONSOLE ===");
             System.out.println("1. Entity Menu (Registry, Reports, Load Demo Data)");
             System.out.println("2. Detection & Graph Analysis Menu (Options 2-6)");
             System.out.println("3. Relationship Menu");
