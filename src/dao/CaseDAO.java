@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import database.DBConnection;
 import model.AuditCase;
 import model.CaseStatus;
 import model.FraudType;
