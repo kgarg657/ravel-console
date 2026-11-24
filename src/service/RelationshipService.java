@@ -1,13 +1,17 @@
 package service;
 
+import dao.AuditLogDAO;
+import dao.DBConnection;
+import dao.EntityDAO;
+import dao.RelationshipDAO;
 import exception.DuplicateRecordException;
 import exception.InvalidEntityException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import model.Entity;
 import model.Invoice;
 import model.Relationship;
@@ -17,10 +21,12 @@ import repository.Repository;
 import util.IdGenerator;
 
 public class RelationshipService {
-    private Repository<Relationship> links;
-    private Repository<Entity> entities;
-    private IdGenerator ids;
-    private Set<String> linkKeys;
+    private final Repository<Relationship> links;
+    private final Repository<Entity> entities;
+    private final IdGenerator ids;
+    private final RelationshipDAO relationshipDAO;
+    private final EntityDAO entityDAO;
+    private final AuditLogDAO auditLogDAO;
 
     public RelationshipService(
             Repository<Relationship> links,
@@ -29,7 +35,22 @@ public class RelationshipService {
         this.links = links;
         this.entities = entities;
         this.ids = ids;
-        this.linkKeys = new HashSet<>();
+        this.relationshipDAO = null;
+        this.entityDAO = null;
+        this.auditLogDAO = null;
+    }
+
+    public RelationshipService(
+            RelationshipDAO relationshipDAO,
+            EntityDAO entityDAO,
+            AuditLogDAO auditLogDAO,
+            IdGenerator ids) {
+        this.links = relationshipDAO;
+        this.entities = entityDAO;
+        this.ids = ids;
+        this.relationshipDAO = relationshipDAO;
+        this.entityDAO = entityDAO;
+        this.auditLogDAO = auditLogDAO;
     }
 
     public void addLink(Relationship r) {
@@ -40,11 +61,12 @@ public class RelationshipService {
             throw new InvalidEntityException("Relationship linkId must be set.");
         }
         String key = r.key();
-        if (linkKeys.contains(key)) {
-            throw new DuplicateRecordException("Duplicate relationship key: " + key);
+        for (Relationship existing : links.findAll()) {
+            if (existing != null && key.equals(existing.key())) {
+                throw new DuplicateRecordException("Duplicate relationship key: " + key);
+            }
         }
         links.save(r);
-        linkKeys.add(key);
     }
 
     public List<Relationship> findAll() {
@@ -132,6 +154,29 @@ public class RelationshipService {
         if (r.getStatus() != RelationshipStatus.SUGGESTED) {
             throw new InvalidEntityException("Only SUGGESTED links can be approved.");
         }
+
+        if (relationshipDAO != null && entityDAO != null && auditLogDAO != null) {
+            try (Connection conn = DBConnection.get()) {
+                conn.setAutoCommit(false);
+                try {
+                    relationshipDAO.updateStatus(conn, linkId, RelationshipStatus.APPROVED);
+                    entityDAO.addRisk(conn, r.getSourceId(), 15);
+                    entityDAO.addRisk(conn, r.getTargetId(), 15);
+                    auditLogDAO.insert(conn, "APPROVED " + linkId, linkId);
+                    conn.commit();
+                } catch (Exception ex) {
+                    conn.rollback();
+                    if (ex instanceof RuntimeException) {
+                        throw (RuntimeException) ex;
+                    }
+                    throw new RuntimeException("Approve transaction failed: " + ex.getMessage(), ex);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException("Database connection failed: " + e.getMessage(), e);
+            }
+            return;
+        }
+
         r.setStatus(RelationshipStatus.APPROVED);
         links.update(r);
 
