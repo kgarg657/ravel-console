@@ -29,7 +29,7 @@ public class GraphPrinter {
             sb.append("Breakdown by Rule:\n");
             for (String ruleName : counts.keySet()) {
                 sb.append("  - ").append(ruleName)
-                  .append(": ").append(counts.get(ruleName)).append("\n");
+                        .append(": ").append(counts.get(ruleName)).append("\n");
             }
         }
         return sb.toString();
@@ -109,7 +109,7 @@ public class GraphPrinter {
         for (int i = 0; i < loops.size(); i++) {
             List<Relationship> cycle = loops.get(i);
             sb.append("LOOP #").append(i + 1)
-              .append(" FOUND (").append(cycle.size()).append(" entities)\n");
+                    .append(" FOUND (").append(cycle.size()).append(" entities)\n");
 
             for (Relationship edge : cycle) {
                 sb.append("  ").append(formatNodeLabel(edge.getSourceId(), entityService)).append("\n");
@@ -121,7 +121,7 @@ public class GraphPrinter {
             }
             String firstId = cycle.get(0).getSourceId();
             sb.append("  ").append(formatNodeLabel(firstId, entityService))
-              .append(" (loop closes here)\n\n");
+                    .append(" (loop closes here)\n\n");
         }
         return sb.toString();
     }
@@ -131,9 +131,10 @@ public class GraphPrinter {
             return "[UNKNOWN]";
         }
         if (entityService != null) {
-            Entity e = entityService.findById(entityId);
-            if (e != null) {
-                return "[" + e.getId() + " " + e.getName() + "]";
+            for (Entity e : entityService.getAllEntities()) {
+                if (entityId.equalsIgnoreCase(e.getId())) {
+                    return "[" + e.getId() + " " + e.getName() + "]";
+                }
             }
         }
         return "[" + entityId + "]";

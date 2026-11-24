@@ -77,7 +77,7 @@ public class GraphMenu {
     }
 
     private void handleRunDetection() {
-        DetectionReport report = detectionService.runAll(entityService.getAll());
+        DetectionReport report = detectionService.runAll(entityService.getAllEntities());
         System.out.println("\n" + printer.formatDetectionReport(report));
         if (!report.getNewLinks().isEmpty()) {
             System.out.println("Newly Flagged Links:");

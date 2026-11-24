@@ -22,7 +22,7 @@ public class IngestConsumer implements Runnable {
             while ((invoice = queue.take()) != null) {
                 String invoiceId = invoice.getId();
                 try {
-                    entityService.register(invoice);
+                    entityService.registerEntity(invoice);
                     System.out.println("[" + threadName + "] Registered invoice: " + invoiceId);
                 } catch (InvalidEntityException | DuplicateRecordException e) {
                     System.out.println("[" + threadName + "] Rejected invoice " + invoiceId + ": " + e.getMessage());

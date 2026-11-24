@@ -1,5 +1,6 @@
 package dao;
 
+import database.DBConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -69,7 +70,7 @@ public class EntityDAO implements Repository<Entity> {
             throw new IllegalArgumentException("Entity cannot be null.");
         }
         try (Connection conn = DBConnection.get();
-                PreparedStatement ps = conn.prepareStatement(INSERT_SQL)) {
+             PreparedStatement ps = conn.prepareStatement(INSERT_SQL)) {
             bindEntityParameters(ps, entity);
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -80,7 +81,7 @@ public class EntityDAO implements Repository<Entity> {
     @Override
     public Entity findById(String id) {
         try (Connection conn = DBConnection.get();
-                PreparedStatement ps = conn.prepareStatement(SELECT_BY_ID_SQL)) {
+             PreparedStatement ps = conn.prepareStatement(SELECT_BY_ID_SQL)) {
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -97,8 +98,8 @@ public class EntityDAO implements Repository<Entity> {
     public List<Entity> findAll() {
         List<Entity> entities = new ArrayList<>();
         try (Connection conn = DBConnection.get();
-                PreparedStatement ps = conn.prepareStatement(SELECT_ALL_SQL);
-                ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = conn.prepareStatement(SELECT_ALL_SQL);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 entities.add(mapRowToEntity(rs));
             }
@@ -114,7 +115,7 @@ public class EntityDAO implements Repository<Entity> {
             throw new IllegalArgumentException("Entity cannot be null.");
         }
         try (Connection conn = DBConnection.get();
-                PreparedStatement ps = conn.prepareStatement(UPDATE_SQL)) {
+             PreparedStatement ps = conn.prepareStatement(UPDATE_SQL)) {
             ps.setString(1, resolveEntityType(entity));
             ps.setString(2, entity.getName());
             ps.setInt(3, entity.getRiskScore());
@@ -133,7 +134,7 @@ public class EntityDAO implements Repository<Entity> {
     @Override
     public void delete(String id) {
         try (Connection conn = DBConnection.get();
-                PreparedStatement ps = conn.prepareStatement(DELETE_BY_ID_SQL)) {
+             PreparedStatement ps = conn.prepareStatement(DELETE_BY_ID_SQL)) {
             ps.setString(1, id);
             ps.executeUpdate();
         } catch (SQLException e) {

@@ -36,9 +36,9 @@ public class AuditConsumer implements Runnable {
                 }
 
                 try {
-                    entityService.register(invoice);
+                    entityService.registerEntity(invoice);
                     processedCount++;
-                    DetectionReport report = detectionService.runAll(entityService.getAll());
+                    DetectionReport report = detectionService.runAll(entityService.getAllEntities());
                     System.out.println(
                             "[Consumer] Saved " + invoice.getId()
                                     + " | New fraud links found: " + report.getNewLinks().size());

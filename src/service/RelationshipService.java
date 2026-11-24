@@ -1,7 +1,7 @@
 package service;
 
 import dao.AuditLogDAO;
-import dao.DBConnection;
+import database.DBConnection;
 import dao.EntityDAO;
 import dao.RelationshipDAO;
 import exception.DuplicateRecordException;

@@ -1,5 +1,6 @@
 package dao;
 
+import database.DBConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -7,7 +8,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import model.AuditCase;
 import model.CaseStatus;
 import model.FraudType;
@@ -222,7 +222,6 @@ public class CaseDAO {
             }
         }
 
-        // Fallback if a row in audit_case has no rows in case_entity yet
         if (entityIds.isEmpty()) {
             entityIds.add("UNKNOWN");
         }

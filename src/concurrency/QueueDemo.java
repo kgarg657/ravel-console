@@ -37,6 +37,6 @@ public class QueueDemo {
 
         System.out.println("--- Queue Demo Complete ---");
         System.out.println("New invoices saved : " + consumer.getProcessedCount());
-        System.out.println("Total entities now : " + entityService.getAll().size());
+        System.out.println("Total entities now : " + entityService.getAllEntities().size());
     }
 }

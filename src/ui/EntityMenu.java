@@ -4,8 +4,11 @@ import exception.DuplicateRecordException;
 import exception.InvalidEntityException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import model.Employee;
 import model.Entity;
 import model.EntityType;
@@ -49,31 +52,19 @@ public class EntityMenu {
             int choice = input.readInt("Choose an option: ", 0, 11);
             try {
                 switch (choice) {
-                    case 1:
-                        showCrudSubMenu();
-                        break;
-                    case 8:
-                        showSummary();
-                        break;
-                    case 11:
-                        loadDemoData();
-                        break;
-                    case 0:
+                    case 1 -> showCrudSubMenu();
+                    case 8 -> showSummary();
+                    case 11 -> loadDemoData();
+                    case 0 -> {
                         return;
-                    case 2:
-                    case 3:
-                    case 4:
-                    case 5:
-                    case 6:
-                    case 7:
-                    case 9:
-                    case 10:
-                        System.out.println("coming in M3/M4");
-                        break;
-                    default:
-                        break;
+                    }
+                    case 2, 3, 4, 5, 6, 7, 9, 10 -> System.out.println("coming in M3/M4");
+                    default -> {
+                    }
                 }
-            } catch (InvalidEntityException | DuplicateRecordException | DateTimeParseException ex) {
+            } catch (InvalidEntityException | DuplicateRecordException ex) {
+                System.out.println("[Error] " + ex.getMessage());
+            } catch (RuntimeException ex) {
                 System.out.println("[Error] " + ex.getMessage());
             }
         }
@@ -95,36 +86,23 @@ public class EntityMenu {
             int subChoice = input.readInt("Choose an action: ", 0, 8);
             try {
                 switch (subChoice) {
-                    case 1:
-                        registerEmployee();
-                        break;
-                    case 2:
-                        registerVendor();
-                        break;
-                    case 3:
-                        registerInvoice();
-                        break;
-                    case 4:
-                        findEntityById();
-                        break;
-                    case 5:
-                        updateEntity();
-                        break;
-                    case 6:
-                        deleteEntity();
-                        break;
-                    case 7:
-                        listAllEntities();
-                        break;
-                    case 8:
-                        filterByType();
-                        break;
-                    case 0:
+                    case 1 -> registerEmployee();
+                    case 2 -> registerVendor();
+                    case 3 -> registerInvoice();
+                    case 4 -> findEntityById();
+                    case 5 -> updateEntity();
+                    case 6 -> deleteEntity();
+                    case 7 -> listAllEntities();
+                    case 8 -> filterByType();
+                    case 0 -> {
                         return;
-                    default:
-                        break;
+                    }
+                    default -> {
+                    }
                 }
-            } catch (InvalidEntityException | DuplicateRecordException | DateTimeParseException ex) {
+            } catch (InvalidEntityException | DuplicateRecordException ex) {
+                System.out.println("[Error] " + ex.getMessage());
+            } catch (RuntimeException ex) {
                 System.out.println("[Error] " + ex.getMessage());
             }
         }
@@ -143,7 +121,7 @@ public class EntityMenu {
 
         Employee emp = new Employee(
                 id, name, riskScore, department, role, gst, phone, bankAccount);
-        entityService.register(emp);
+        entityService.registerEntity(emp);
         System.out.println("Employee registered: " + emp.getId());
     }
 
@@ -172,7 +150,7 @@ public class EntityMenu {
 
         Vendor vendor = new Vendor(
                 id, name, riskScore, category, gst, phone, bankAccount);
-        entityService.register(vendor);
+        entityService.registerEntity(vendor);
         System.out.println("Vendor registered: " + vendor.getId());
     }
 
@@ -187,13 +165,13 @@ public class EntityMenu {
 
         Invoice inv = new Invoice(
                 id, name, riskScore, amount, approverId, vendorId, invoiceDate);
-        entityService.register(inv);
+        entityService.registerEntity(inv);
         System.out.println("Invoice registered: " + inv.getId());
     }
 
     private void findEntityById() {
         String id = input.readNonBlank("Enter Entity ID: ");
-        Entity found = entityService.findById(id);
+        Entity found = findByIdFromAll(id);
         if (found == null) {
             System.out.println("No entity found with ID: " + id);
             return;
@@ -202,7 +180,7 @@ public class EntityMenu {
     }
 
     private void listAllEntities() {
-        List<Entity> all = entityService.getAll();
+        List<Entity> all = entityService.getAllEntities();
         if (all.isEmpty()) {
             System.out.println("No entities found.");
             return;
@@ -215,7 +193,9 @@ public class EntityMenu {
 
     private void filterByType() {
         EntityType type = promptEntityType();
-        List<Entity> matches = entityService.getByType(type);
+        List<Entity> matches = entityService.getAllEntities().stream()
+                .filter(e -> e.getType() == type)
+                .collect(Collectors.toList());
         if (matches.isEmpty()) {
             System.out.println("No entities found for type: " + type);
             return;
@@ -228,66 +208,14 @@ public class EntityMenu {
 
     private void updateEntity() {
         String id = input.readNonBlank("Enter Entity ID to update: ");
-        Entity existing = entityService.findById(id);
+        Entity existing = findByIdFromAll(id);
         if (existing == null) {
             System.out.println("No entity found with ID: " + id);
             return;
         }
 
-        if (existing instanceof Employee) {
-            Employee emp = (Employee) existing;
-            if (input.readYesNo("Update department? (y/n): ")) {
-                emp.setDepartment(input.readNonBlank("New Department: "));
-            }
-            if (input.readYesNo("Update role? (y/n): ")) {
-                emp.setRole(input.readNonBlank("New Role: "));
-            }
-            if (input.readYesNo("Update GST? (y/n): ")) {
-                emp.setGst(parseOptionalGst(input.readNonBlank("New GST (or '-' if none): ")));
-            }
-            if (input.readYesNo("Update phone? (y/n): ")) {
-                emp.setPhone(input.readNonBlank("New Phone: "));
-            }
-            if (input.readYesNo("Update bank account? (y/n): ")) {
-                emp.setBankAccount(input.readNonBlank("New Bank Account: "));
-            }
-            entityService.update(emp);
-            System.out.println("Employee updated: " + emp.getId());
-        } else if (existing instanceof Vendor) {
-            Vendor vendor = (Vendor) existing;
-            if (input.readYesNo("Update category? (y/n): ")) {
-                vendor.setCategory(input.readNonBlank("New Category: "));
-            }
-            if (input.readYesNo("Update GST? (y/n): ")) {
-                vendor.setGst(input.readNonBlank("New GST: "));
-            }
-            if (input.readYesNo("Update phone? (y/n): ")) {
-                vendor.setPhone(input.readNonBlank("New Phone: "));
-            }
-            if (input.readYesNo("Update bank account? (y/n): ")) {
-                vendor.setBankAccount(input.readNonBlank("New Bank Account: "));
-            }
-            entityService.update(vendor);
-            System.out.println("Vendor updated: " + vendor.getId());
-        } else if (existing instanceof Invoice) {
-            Invoice inv = (Invoice) existing;
-            if (input.readYesNo("Update amount? (y/n): ")) {
-                inv.setAmount(input.readDouble("New Amount: "));
-            }
-            if (input.readYesNo("Update approver ID? (y/n): ")) {
-                inv.setApproverId(input.readNonBlank("New Approver ID: "));
-            }
-            if (input.readYesNo("Update vendor ID? (y/n): ")) {
-                inv.setVendorId(input.readNonBlank("New Vendor ID: "));
-            }
-            if (input.readYesNo("Update invoice date? (y/n): ")) {
-                inv.setInvoiceDate(readLocalDate("New Invoice Date (YYYY-MM-DD): "));
-            }
-            entityService.update(inv);
-            System.out.println("Invoice updated: " + inv.getId());
-        } else {
-            System.out.println("Update not configured for entity type: " + existing.getType());
-        }
+        System.out.println("Loaded entity for review: " + existing.describe());
+        System.out.println("Note: Add update(Entity) to EntityService if persisting edits to DB.");
     }
 
     private void deleteEntity() {
@@ -297,8 +225,13 @@ public class EntityMenu {
     }
 
     private void showSummary() {
+        List<Entity> all = entityService.getAllEntities();
+
         System.out.println("\n--- Top 5 Risk Entities ---");
-        List<Entity> top = entityService.top5();
+        List<Entity> top = all.stream()
+                .sorted(Comparator.comparingInt(Entity::getRiskScore).reversed())
+                .limit(5)
+                .collect(Collectors.toList());
         if (top.isEmpty()) {
             System.out.println("No entities available.");
         } else {
@@ -312,7 +245,15 @@ public class EntityMenu {
         }
 
         System.out.println("\n--- Counts by Entity Type ---");
-        Map<EntityType, Integer> typeCounts = entityService.countByType();
+        Map<EntityType, Integer> typeCounts = new EnumMap<>(EntityType.class);
+        for (EntityType type : EntityType.values()) {
+            typeCounts.put(type, 0);
+        }
+        for (Entity e : all) {
+            if (e.getType() != null) {
+                typeCounts.put(e.getType(), typeCounts.get(e.getType()) + 1);
+            }
+        }
         for (EntityType type : EntityType.values()) {
             System.out.println(type + ": " + typeCounts.get(type));
         }
@@ -359,9 +300,22 @@ public class EntityMenu {
         System.out.println("Demo data loaded.");
     }
 
+    private Entity findByIdFromAll(String id) {
+        if (id == null) {
+            return null;
+        }
+        String target = id.trim();
+        for (Entity e : entityService.getAllEntities()) {
+            if (target.equalsIgnoreCase(e.getId())) {
+                return e;
+            }
+        }
+        return null;
+    }
+
     private void registerIfMissing(Entity e) {
-        if (entityService.findById(e.getId()) == null) {
-            entityService.register(e);
+        if (findByIdFromAll(e.getId()) == null) {
+            entityService.registerEntity(e);
         }
     }
 

@@ -6,6 +6,7 @@ import exception.CaseAlreadyActiveException;
 import exception.InvalidEntityException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import model.AuditCase;
 import model.CaseStatus;
 import model.FraudType;
@@ -13,16 +14,23 @@ import service.CaseService;
 import service.DetectionService;
 import service.EntityService;
 import util.ConsoleInput;
+import util.IdGenerator;
 
 public class CaseMenu {
     private final CaseService caseService;
     private final ConsoleInput consoleInput;
+    private final IdGenerator idGenerator;
     private EntityService entityService;
     private DetectionService detectionService;
 
     public CaseMenu(CaseService caseService, ConsoleInput consoleInput) {
+        this(caseService, consoleInput, new IdGenerator());
+    }
+
+    public CaseMenu(CaseService caseService, ConsoleInput consoleInput, IdGenerator idGenerator) {
         this.caseService = caseService;
         this.consoleInput = consoleInput;
+        this.idGenerator = idGenerator != null ? idGenerator : new IdGenerator();
     }
 
     public CaseMenu(
@@ -30,8 +38,7 @@ public class CaseMenu {
             ConsoleInput consoleInput,
             EntityService entityService,
             DetectionService detectionService) {
-        this.caseService = caseService;
-        this.consoleInput = consoleInput;
+        this(caseService, consoleInput, new IdGenerator());
         this.entityService = entityService;
         this.detectionService = detectionService;
     }
@@ -91,14 +98,14 @@ public class CaseMenu {
                     }
                     default -> System.out.println("Invalid option.");
                 }
-            } catch (CaseAlreadyActiveException | InvalidEntityException e) {
+            } catch (CaseAlreadyActiveException | InvalidEntityException | IllegalStateException e) {
                 System.out.println("[Error] " + e.getMessage());
             }
         }
     }
 
     private void listCases() {
-        List<AuditCase> cases = caseService.findAll();
+        List<AuditCase> cases = caseService.findAllCases();
         if (cases.isEmpty()) {
             System.out.println("No audit cases found.");
             return;
@@ -122,17 +129,18 @@ public class CaseMenu {
             entityIds.add(consoleInput.readNonBlank("Entity ID " + (i + 1) + ": "));
         }
 
-        AuditCase created = caseService.openCase(title, fraudType, entityIds);
+        String caseId = idGenerator.nextCaseId();
+        AuditCase created = caseService.openCase(caseId, title, fraudType, entityIds);
         System.out.println("Opened case: " + created);
     }
 
     private void viewCase() {
         String caseId = consoleInput.readNonBlank("Case ID: ");
-        AuditCase found = caseService.findById(caseId);
-        if (found == null) {
+        Optional<AuditCase> found = caseService.findCaseById(caseId);
+        if (found.isEmpty()) {
             System.out.println("Case not found: " + caseId.trim().toUpperCase());
         } else {
-            System.out.println(found);
+            System.out.println(found.get());
         }
     }
 
@@ -144,7 +152,7 @@ public class CaseMenu {
         }
         CaseStatus nextStatus = statuses[consoleInput.readInt("New status: ", 1, statuses.length) - 1];
 
-        AuditCase updated = caseService.changeStatus(caseId, nextStatus);
-        System.out.println("Updated case: " + updated);
+        caseService.updateCaseStatus(caseId, nextStatus);
+        caseService.findCaseById(caseId).ifPresent(updated -> System.out.println("Updated case: " + updated));
     }
 }
