@@ -20,12 +20,17 @@ import repository.Repository;
 public class EntityService {
     private Repository<Entity> entities;
     private RelationshipService relationshipService;
+    private CaseService caseService;
     private Set<String> registeredIds;
 
     public EntityService(Repository<Entity> entities, RelationshipService relationshipService) {
         this.entities = entities;
         this.relationshipService = relationshipService;
         this.registeredIds = new HashSet<>();
+    }
+
+    public void setCaseService(CaseService caseService) {
+        this.caseService = caseService;
     }
 
     public void register(Entity e) {
@@ -99,6 +104,9 @@ public class EntityService {
         }
         if (relationshipService != null && relationshipService.hasLinks(id)) {
             throw new InvalidEntityException("Cannot delete entity with existing links: " + id);
+        }
+        if (caseService != null && caseService.isInActiveCase(id)) {
+            throw new InvalidEntityException("Cannot delete entity in an active case: " + id);
         }
         entities.delete(id);
         registeredIds.remove(id);
