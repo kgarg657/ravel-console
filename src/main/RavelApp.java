@@ -52,7 +52,7 @@ public class RavelApp {
                 relationshipService,
                 entityService,
                 input);
-        CaseMenu caseMenu = new CaseMenu(caseService, input);
+        CaseMenu caseMenu = new CaseMenu(caseService, input, entityService, detectionService);
 
         while (true) {
             System.out.println("\n=== RAVEL FORENSIC AUDIT CONSOLE (M3) ===");

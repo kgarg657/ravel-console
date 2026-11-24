@@ -1,6 +1,7 @@
 package ui;
 
 import concurrency.ConcurrencyDemo;
+import concurrency.QueueDemo;
 import exception.CaseAlreadyActiveException;
 import exception.InvalidEntityException;
 import java.util.ArrayList;
@@ -9,15 +10,35 @@ import model.AuditCase;
 import model.CaseStatus;
 import model.FraudType;
 import service.CaseService;
+import service.DetectionService;
+import service.EntityService;
 import util.ConsoleInput;
 
 public class CaseMenu {
     private final CaseService caseService;
     private final ConsoleInput consoleInput;
+    private EntityService entityService;
+    private DetectionService detectionService;
 
     public CaseMenu(CaseService caseService, ConsoleInput consoleInput) {
         this.caseService = caseService;
         this.consoleInput = consoleInput;
+    }
+
+    public CaseMenu(
+            CaseService caseService,
+            ConsoleInput consoleInput,
+            EntityService entityService,
+            DetectionService detectionService) {
+        this.caseService = caseService;
+        this.consoleInput = consoleInput;
+        this.entityService = entityService;
+        this.detectionService = detectionService;
+    }
+
+    public void setQueueDemoDependencies(EntityService entityService, DetectionService detectionService) {
+        this.entityService = entityService;
+        this.detectionService = detectionService;
     }
 
     public void show() {
@@ -25,20 +46,28 @@ public class CaseMenu {
             System.out.println("\n--- Case & Concurrency Menu ---");
             System.out.println("7. Audit Cases (List, Open, View, Change Status)");
             System.out.println("9. Concurrency Demo");
-            System.out.println("10. Queue Demo (coming in M4)");
+            System.out.println("10. Queue Demo (load demo dataset via option 11 first)");
             System.out.println("0. Back");
 
             int choice = consoleInput.readInt("Choose an option: ", 0, 10);
             switch (choice) {
                 case 7 -> caseSubMenu();
                 case 9 -> ConcurrencyDemo.run();
-                case 10 -> System.out.println("coming in M4");
+                case 10 -> runQueueDemo();
                 case 0 -> {
                     return;
                 }
                 default -> System.out.println("Invalid option.");
             }
         }
+    }
+
+    private void runQueueDemo() {
+        if (entityService == null || detectionService == null) {
+            System.out.println("[Error] Queue Demo services are not configured.");
+            return;
+        }
+        new QueueDemo(entityService, detectionService).run();
     }
 
     private void caseSubMenu() {
