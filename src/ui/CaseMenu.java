@@ -51,16 +51,16 @@ public class CaseMenu {
     public void show() {
         while (true) {
             System.out.println("\n--- Case & Concurrency Menu ---");
-            System.out.println("7. Audit Cases (List, Open, View, Change Status)");
-            System.out.println("9. Concurrency Demo");
-            System.out.println("10. Queue Demo (load demo dataset via option 11 first)");
+            System.out.println("1. Audit Cases (List, Open, View, Change Status)");
+            System.out.println("2. Concurrency Demo");
+            System.out.println("3. Queue Demo");
             System.out.println("0. Back");
 
             int choice = consoleInput.readInt("Choose an option: ", 0, 10);
             switch (choice) {
-                case 7 -> caseSubMenu();
-                case 9 -> ConcurrencyDemo.run();
-                case 10 -> runQueueDemo();
+                case 1 -> caseSubMenu();
+                case 2 -> ConcurrencyDemo.run();
+                case 3 -> runQueueDemo();
                 case 0 -> {
                     return;
                 }
