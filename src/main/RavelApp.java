@@ -7,14 +7,6 @@ import dao.RelationshipDAO;
 import database.DBConnection;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.util.List;
-import model.AuditCase;
-import model.Employee;
-import model.Entity;
-import model.FraudType;
-import model.Invoice;
-import model.Vendor;
 import rules.SharedBankRule;
 import rules.SharedGstRule;
 import rules.SharedPhoneRule;
@@ -46,9 +38,8 @@ public class RavelApp {
             try {
                 idGenerator.initLinkCounter(relationshipDAO.findMaxLinkNumber());
                 idGenerator.initCaseCounter(caseDAO.findMaxCaseNumber());
-                loadDemoDataIfMissing(entityDAO, caseDAO);
             } catch (RuntimeException e) {
-                System.out.println("Startup notice: Unable to initialize counters/demo data (" + e.getMessage() + ").");
+                System.out.println("Startup notice: Unable to initialize counters (" + e.getMessage() + ").");
             }
         }
 
@@ -72,31 +63,6 @@ public class RavelApp {
         } catch (SQLException e) {
             System.out.println("Database connection unavailable: " + e.getMessage());
             return false;
-        }
-    }
-
-    private static void loadDemoDataIfMissing(EntityDAO entityDAO, CaseDAO caseDAO) {
-        List<Entity> demoEntities = List.of(
-                new Employee("EMP-001", "Aarav Sharma", 15, "Finance", "Auditor", null, "9876543210", "ACC1001"),
-                new Vendor("VEN-001", "Apex Supplies", 45, "Office Supply", "03ABCDE1234F1Z5", "9876543211", "ACC2001"),
-                new Invoice("INV-001", "Q4 Supply Bill", 30, 25000.0, "EMP-001", "VEN-001", LocalDate.now()));
-
-        for (Entity entity : demoEntities) {
-            if (entityDAO.findById(entity.getId()) == null) {
-                entityDAO.save(entity);
-            }
-        }
-
-        if (caseDAO.findById("CASE-01").isEmpty()) {
-            if (entityDAO.findById("VEN-001") != null && caseDAO.findActiveCaseIdFor("VEN-001") == null) {
-                AuditCase demoCase = new AuditCase(
-                        "CASE-01",
-                        "Initial Vendor Review",
-                        FraudType.SHELL_VENDOR,
-                        List.of("VEN-001"));
-                caseDAO.save(demoCase);
-                caseDAO.addEntityToCase("CASE-01", "VEN-001");
-            }
         }
     }
 

@@ -35,44 +35,7 @@ public class EntityMenu {
 
     public void show() {
         while (true) {
-            System.out.println("\n--- Entity Menu ---");
-            System.out.println("1. Entity CRUD (Register, Search, Update, Delete, List, Filter)");
-            System.out.println("2. Relationships (coming in M3/M4)");
-            System.out.println("3. Fraud & Risk Rules (coming in M3/M4)");
-            System.out.println("4. Graph Analysis (coming in M3/M4)");
-            System.out.println("5. Audit Cases (coming in M3/M4)");
-            System.out.println("6. Export / Reports (coming in M3/M4)");
-            System.out.println("7. Settings / Info (coming in M3/M4)");
-            System.out.println("8. Top 5 Risk Entities & Counts");
-            System.out.println("9. Concurrency / Batch (coming in M3/M4)");
-            System.out.println("10. Persistence / Storage (coming in M3/M4)");
-            System.out.println("11. Load Demo Data");
-            System.out.println("0. Back");
-
-            int choice = input.readInt("Choose an option: ", 0, 11);
-            try {
-                switch (choice) {
-                    case 1 -> showCrudSubMenu();
-                    case 8 -> showSummary();
-                    case 11 -> loadDemoData();
-                    case 0 -> {
-                        return;
-                    }
-                    case 2, 3, 4, 5, 6, 7, 9, 10 -> System.out.println("coming in M3/M4");
-                    default -> {
-                    }
-                }
-            } catch (InvalidEntityException | DuplicateRecordException ex) {
-                System.out.println("[Error] " + ex.getMessage());
-            } catch (RuntimeException ex) {
-                System.out.println("[Error] " + ex.getMessage());
-            }
-        }
-    }
-
-    private void showCrudSubMenu() {
-        while (true) {
-            System.out.println("\n--- Entity CRUD ---");
+            System.out.println("\n--- Entity Management ---");
             System.out.println("1. Register Employee");
             System.out.println("2. Register Vendor");
             System.out.println("3. Register Invoice");
@@ -81,11 +44,13 @@ public class EntityMenu {
             System.out.println("6. Delete Entity");
             System.out.println("7. List All Entities");
             System.out.println("8. Filter Entities by Type");
+            System.out.println("9. Top 5 Risk Entities & Counts");
+            System.out.println("10. Load Demo Dataset");
             System.out.println("0. Back");
 
-            int subChoice = input.readInt("Choose an action: ", 0, 8);
+            int choice = input.readInt("Choose an option: ", 0, 10);
             try {
-                switch (subChoice) {
+                switch (choice) {
                     case 1 -> registerEmployee();
                     case 2 -> registerVendor();
                     case 3 -> registerInvoice();
@@ -94,6 +59,8 @@ public class EntityMenu {
                     case 6 -> deleteEntity();
                     case 7 -> listAllEntities();
                     case 8 -> filterByType();
+                    case 9 -> showSummary();
+                    case 10 -> loadDemoData();
                     case 0 -> {
                         return;
                     }
@@ -122,7 +89,7 @@ public class EntityMenu {
         Employee emp = new Employee(
                 id, name, riskScore, department, role, gst, phone, bankAccount);
         entityService.registerEntity(emp);
-        System.out.println("Employee registered: " + emp.getId());
+        System.out.println("Employee registered:\n" + emp.describe());
     }
 
     private String parseOptionalGst(String rawGst) {
@@ -151,7 +118,7 @@ public class EntityMenu {
         Vendor vendor = new Vendor(
                 id, name, riskScore, category, gst, phone, bankAccount);
         entityService.registerEntity(vendor);
-        System.out.println("Vendor registered: " + vendor.getId());
+        System.out.println("Vendor registered:\n" + vendor.describe());
     }
 
     private void registerInvoice() {
@@ -166,7 +133,8 @@ public class EntityMenu {
         Invoice inv = new Invoice(
                 id, name, riskScore, amount, approverId, vendorId, invoiceDate);
         entityService.registerEntity(inv);
-        System.out.println("Invoice registered: " + inv.getId());
+        relationshipService.createInvoiceLinks(inv);
+        System.out.println("Invoice registered (APPROVED_BY & PAYABLE_TO links created):\n" + inv.describe());
     }
 
     private void findEntityById() {
@@ -177,6 +145,61 @@ public class EntityMenu {
             return;
         }
         System.out.println(found.describe());
+    }
+
+    private void updateEntity() {
+        String id = input.readNonBlank("Enter Entity ID to update: ");
+        Entity existing = findByIdFromAll(id);
+        if (existing == null) {
+            System.out.println("No entity found with ID: " + id);
+            return;
+        }
+
+        System.out.println("Current record:\n" + existing.describe());
+
+        if (existing instanceof Employee) {
+            String name = input.readNonBlank("New Name: ");
+            String department = input.readNonBlank("New Department: ");
+            String role = input.readNonBlank("New Role: ");
+            String gst = parseOptionalGst(input.readNonBlank("New GST (or '-' if none): "));
+            String phone = input.readNonBlank("New Phone: ");
+            String bankAccount = input.readNonBlank("New Bank Account: ");
+
+            Employee updated = new Employee(
+                    existing.getId(), name, existing.getRiskScore(),
+                    department, role, gst, phone, bankAccount);
+            entityService.updateEntity(updated);
+            System.out.println("Employee updated:\n" + updated.describe());
+        } else if (existing instanceof Vendor) {
+            String name = input.readNonBlank("New Name: ");
+            String category = input.readNonBlank("New Category: ");
+            String gst = input.readNonBlank("New GST: ");
+            String phone = input.readNonBlank("New Phone: ");
+            String bankAccount = input.readNonBlank("New Bank Account: ");
+
+            Vendor updated = new Vendor(
+                    existing.getId(), name, existing.getRiskScore(),
+                    category, gst, phone, bankAccount);
+            entityService.updateEntity(updated);
+            System.out.println("Vendor updated:\n" + updated.describe());
+        } else if (existing instanceof Invoice) {
+            String name = input.readNonBlank("New Invoice Title / Name: ");
+            double amount = input.readDouble("New Amount: ");
+            String approverId = input.readNonBlank("New Approver Employee ID: ");
+            String vendorId = input.readNonBlank("New Vendor ID: ");
+            LocalDate invoiceDate = readLocalDate("New Invoice Date (YYYY-MM-DD): ");
+
+            Invoice updated = new Invoice(
+                    existing.getId(), name, existing.getRiskScore(),
+                    amount, approverId, vendorId, invoiceDate);
+            entityService.updateEntity(updated);
+            System.out.println("Invoice updated:\n" + updated.describe());
+        }
+    }
+
+    private void deleteEntity() {
+        String id = input.readNonBlank("Enter Entity ID to delete: ");
+        entityService.delete(id);
     }
 
     private void listAllEntities() {
@@ -206,30 +229,13 @@ public class EntityMenu {
         }
     }
 
-    private void updateEntity() {
-        String id = input.readNonBlank("Enter Entity ID to update: ");
-        Entity existing = findByIdFromAll(id);
-        if (existing == null) {
-            System.out.println("No entity found with ID: " + id);
-            return;
-        }
-
-        System.out.println("Loaded entity for review: " + existing.describe());
-        System.out.println("Note: Add update(Entity) to EntityService if persisting edits to DB.");
-    }
-
-    private void deleteEntity() {
-        String id = input.readNonBlank("Enter Entity ID to delete: ");
-        entityService.delete(id);
-        System.out.println("Entity deleted: " + id);
-    }
-
     private void showSummary() {
         List<Entity> all = entityService.getAllEntities();
 
         System.out.println("\n--- Top 5 Risk Entities ---");
         List<Entity> top = all.stream()
-                .sorted(Comparator.comparingInt(Entity::getRiskScore).reversed())
+                .sorted(Comparator.comparingInt(Entity::getRiskScore).reversed()
+                        .thenComparing(Entity::getName))
                 .limit(5)
                 .collect(Collectors.toList());
         if (top.isEmpty()) {
@@ -267,37 +273,37 @@ public class EntityMenu {
 
     private void loadDemoData() {
         registerIfMissing(new Employee(
-                "EMP-001", "Aarav Sharma", 35,
-                "Finance", "Analyst", null, "9876543210", "ACC123456"));
+                "EMP-001", "B. Patel", 0,
+                "Procurement", "Manager", "03AABCB1234H1Z5", "9876543210", "HDFC0011"));
         registerIfMissing(new Employee(
-                "EMP-002", "Meera Nair", 25,
-                "Audit", "Reviewer", null, "9876543214", "ACC123457"));
+                "EMP-002", "R. Sharma", 0,
+                "Finance", "Analyst", null, "9123456780", "ICIC0022"));
 
         registerIfMissing(new Vendor(
-                "VEN-001", "Apex Supplies", 55,
-                "Office", "22AAAAA0000A1Z5", "9876543211", "ACC654321"));
+                "VEN-001", "Alpha Traders", 0,
+                "Goods", "03AAACA1111A1Z1", "9000000001", "SBIN0001"));
         registerIfMissing(new Vendor(
-                "VEN-002", "Prime Logistics", 45,
-                "Transport", "27BBBBB1111B1Z2", "9876543212", "ACC789012"));
+                "VEN-002", "Beta Logistics", 0,
+                "Transport", "03AAACB2222B1Z2", "9000000002", "SBIN0002"));
         registerIfMissing(new Vendor(
-                "VEN-003", "Crest Tech", 65,
-                "IT Services", "29CCCCC2222C1Z9", "9876543215", "ACC890123"));
+                "VEN-003", "Gamma Infra", 0,
+                "Infra", "03AAACC3333C1Z3", "9000000003", "SBIN0003"));
         registerIfMissing(new Vendor(
-                "VEN-004", "Vertex Traders", 50,
-                "Supplies", "07DDDDD3333D1Z1", "9876543210", "ACC890124"));
+                "VEN-004", "Apex Supplies", 0,
+                "IT", "07AABCB1234H1Z9", "9876543210", "AXIS0099"));
 
         registerIfMissing(new Invoice(
-                "INV-101", "Office Supplies Order", 40,
-                12500.0, "EMP-001", "VEN-001", LocalDate.of(2026, 11, 1)));
+                "INV-101", "IT Procurement Bill", 0,
+                450000.0, "EMP-001", "VEN-004", LocalDate.of(2026, 11, 1)));
         registerIfMissing(new Invoice(
-                "INV-102", "Fleet Transport Bill", 50,
-                18000.0, "EMP-002", "VEN-002", LocalDate.of(2026, 11, 5)));
+                "INV-102", "Supply Dispatch Bill", 0,
+                120000.0, "EMP-002", "VEN-001", LocalDate.of(2026, 11, 5)));
 
-        recordPaymentIfMissing("VEN-001", "VEN-002", 25000.0);
-        recordPaymentIfMissing("VEN-002", "VEN-003", 15000.0);
-        recordPaymentIfMissing("VEN-003", "VEN-001", 30000.0);
+        recordPaymentIfMissing("VEN-001", "VEN-002", 500000.0);
+        recordPaymentIfMissing("VEN-002", "VEN-003", 490000.0);
+        recordPaymentIfMissing("VEN-003", "VEN-001", 485000.0);
 
-        System.out.println("Demo data loaded.");
+        System.out.println("Demo dataset loaded.");
     }
 
     private Entity findByIdFromAll(String id) {
@@ -316,6 +322,9 @@ public class EntityMenu {
     private void registerIfMissing(Entity e) {
         if (findByIdFromAll(e.getId()) == null) {
             entityService.registerEntity(e);
+            if (e instanceof Invoice inv) {
+                relationshipService.createInvoiceLinks(inv);
+            }
         }
     }
 
