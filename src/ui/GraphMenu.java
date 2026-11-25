@@ -38,36 +38,36 @@ public class GraphMenu {
     public void show() {
         while (true) {
             System.out.println("\n--- Detection & Graph Analysis Menu ---");
-            System.out.println("2. Run Link Detection");
-            System.out.println("3. Review Suggested Links (Approve / Reject / Skip)");
-            System.out.println("4. Find Connection Path (BFS)");
-            System.out.println("5. Detect Circular Loops (DFS)");
-            System.out.println("6. Record Vendor Payment");
+            System.out.println("1. Run Link Detection");
+            System.out.println("2. Review Suggested Links (Approve / Reject / Skip)");
+            System.out.println("3. Find Connection Path (BFS)");
+            System.out.println("4. Detect Circular Loops (DFS)");
+            System.out.println("5. Record Vendor Payment");
             System.out.println("0. Back");
 
-            int choice = input.readInt("Choose an option: ", 0, 6);
+            int choice = input.readInt("Choose an option: ", 0, 5);
 
             try {
                 switch (choice) {
-                    case 2:
+                    case 1:
                         handleRunDetection();
                         break;
-                    case 3:
+                    case 2:
                         handleReviewSuggestedLinks();
                         break;
-                    case 4:
+                    case 3:
                         handleFindPath();
                         break;
-                    case 5:
+                    case 4:
                         handleDetectLoops();
                         break;
-                    case 6:
+                    case 5:
                         handleRecordPayment();
                         break;
                     case 0:
                         return;
                     default:
-                        System.out.println("Choose 2-6 or 0 to go back.");
+                        System.out.println("Choose 1-5 or 0 to go back.");
                         break;
                 }
             } catch (InvalidEntityException | DuplicateRecordException ex) {
